@@ -30,22 +30,24 @@ def get_newspic_news():
     res = requests.get(url, headers=headers)
     soup = BeautifulSoup(res.text, 'html.parser')
     
-    # 여러 구조를 순차적으로 탐색
-    # 1. 클래스 기반 탐색
-    titles = soup.select('.section_list .title') or soup.find_all('p', class_='title')
+    # 여러 구조를 순차적으로 탐색하여 기사 추출
+    # 1. 클래스 기반 정밀 탐색
+    items = soup.select('.section_list li') or soup.find_all('li')
     
-    for t in titles:
-        parent_a = t.find_parent('a')
-        if parent_a and 'nid=' in parent_a['href']:
-            title = t.get_text().strip()
-            nid = parent_a['href'].split('nid=')[1].split('&')[0]
+    for item in items:
+        title_tag = item.select_one('.title') or item.find('p')
+        link_tag = item.find('a', href=True)
+        
+        if title_tag and link_tag and 'nid=' in link_tag['href']:
+            title = title_tag.get_text().strip()
+            nid = link_tag['href'].split('nid=')[1].split('&')[0]
             return title, nid
             
     # 2. 모든 링크 탐색 (최후의 수단)
     for a in soup.find_all('a', href=True):
         if 'nid=' in a['href']:
             nid = a['href'].split('nid=')[1].split('&')[0]
-            title = a.get_text().strip() or "최신 사건사고 뉴스"
+            title = a.get_text().strip() or "실시간 사건사고 소식"
             return title, nid
             
     raise Exception("뉴스 기사 구조를 읽어오지 못했습니다.")
@@ -57,12 +59,12 @@ def send_kakao_message(token, text):
         "template_object": json.dumps({
             "object_type": "text",
             "text": text,
-            "link": {"web_url": f"https://m.newspic.kr/view.html?pn={PN}"},
+            "link": {"web_url": "https://m.newspic.kr"},
             "button_title": "내용 확인하기"
         })
     }
     res = requests.post(url, headers=headers, data=payload)
-    print(f"✅ 카톡 전송 결과: {res.json()}")
+    print(f"✅ 카톡 전송 시도 결과: {res.json()}")
 
 # 실행 메인 로직
 try:
@@ -70,7 +72,7 @@ try:
     if access_token:
         title, nid = get_newspic_news()
         
-        # --- 커버문구 랜덤 선택 ---
+        # --- [커버문구 로직 적용] ---
         covers = [
             f"🚨 [긴급 소식] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 사건사고 현장입니다. 확인해 보세요.\n\n\"{title}\"",
