@@ -24,29 +24,30 @@ def get_kakao_token():
     return res.get('access_token')
 
 def get_newspic_news():
-    # 뉴스픽 '사건사고' 섹션 - 최신 구조 반영
+    # 뉴스픽 '사건사고' 섹션 수집 - 최신 구조 정밀 타겟팅
     url = "https://m.newspic.kr/section.html?category=%EC%82%AC%EA%B1%B4%EC%82%AC%EA%B3%A0"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1'
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15'
     }
     res = requests.get(url, headers=headers)
     soup = BeautifulSoup(res.text, 'html.parser')
     
-    # 기사 리스트를 찾는 더 유연한 방법
-    items = soup.find_all('p', class_='title')
-    if not items:
-        # 다른 태그 구조인 경우 대비
-        items = soup.select('.section_list .title')
+    # 기사 리스트에서 첫 번째 기사 찾기
+    item = soup.select_one('.section_list li')
+    if not item:
+        # 대안 구조 확인
+        item = soup.find('li')
     
-    if items:
-        title = items[0].get_text().strip()
-        # 해당 타이틀의 부모 태그에서 nid 추출
-        parent_a = items[0].find_parent('a')
-        if parent_a and 'nid=' in parent_a['href']:
-            nid = parent_a['href'].split('nid=')[1].split('&')[0]
+    if item:
+        title_tag = item.select_one('.title') or item.find('p')
+        link_tag = item.find('a', href=True)
+        
+        if title_tag and link_tag:
+            title = title_tag.get_text().strip()
+            nid = link_tag['href'].split('nid=')[1].split('&')[0]
             return title, nid
             
-    raise Exception("뉴스 기사 구조를 읽어오지 못했습니다. (선택자 재확인 필요)")
+    raise Exception("뉴스 기사 구조를 읽어오지 못했습니다. 뉴스픽 페이지를 확인하세요.")
 
 def send_kakao_message(token, text):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
@@ -60,16 +61,16 @@ def send_kakao_message(token, text):
         })
     }
     res = requests.post(url, headers=headers, data=payload)
-    print(f"✅ 카톡 전송 결과: {res.json()}")
+    print(f"✅ 카톡 전송 시도 결과: {res.json()}")
 
 # 실행 로직
 try:
     access_token = get_kakao_token()
     if access_token:
-        print("✅ 카카오 토큰 발급 완료.")
+        print("✅ 카카오 토큰 인증 성공.")
         title, nid = get_newspic_news()
         
-        # --- 커버문구 적용 ---
+        # --- [커버문구 로직 적용] ---
         covers = [
             f"🚨 [긴급 소식] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 사건사고 현장입니다. 확인해 보세요.\n\n\"{title}\"",
@@ -80,5 +81,7 @@ try:
         message = f"{selected_text}\n\n👇 실시간 내용 확인\n{final_url}"
         
         send_kakao_message(access_token, message)
+    else:
+        print("❌ 토큰을 가져오지 못했습니다. 인가 코드를 갱신해 주세요.")
 except Exception as e:
-    print(f"⚠️ 오류 발생: {e}")
+    print(f"⚠️ 실행 중 오류 발생: {e}")
