@@ -43,23 +43,20 @@ def get_kakao_token():
     return None
 
 def get_real_article():
-    # 뉴스픽 '사건사고' 섹션 - 정밀 타겟팅 수집
     url = "https://m.newspic.kr/section.html?category=%EC%82%AC%EA%B1%B4%EC%82%AC%EA%B3%A0"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_8 like Mac OS X) AppleWebKit/605.1.15'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
-        # 기사 리스트에서 실제 nid와 제목 추출
         for a in soup.find_all('a', href=True):
             if 'nid=' in a['href']:
                 nid = a['href'].split('nid=')[1].split('&')[0]
-                # 진짜 기사 번호(숫자)인지 검증
                 if nid.isdigit() and len(nid) < 12:
                     title_tag = a.select_one('.title') or a.find('p')
                     title = title_tag.get_text().strip() if title_tag else "최신 긴급 소식"
                     return title, nid
     except: pass
-    return "방금 들어온 실시간 주요 소식", "8756214" # 유효한 백업 nid
+    return "방금 들어온 실시간 주요 소식", "8756214"
 
 def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
@@ -73,9 +70,9 @@ def send_kakao_message(token, text, nid):
             "button_title": "기사 확인하기"
         })
     }
-    requests.post(url, headers=headers, data=payload)
+    res = requests.post(url, headers=headers, data=payload)
+    print(f"📢 전송 결과 상세: {res.status_code} / {res.json()}")
 
-# 메인 실행
 try:
     access_token = get_kakao_token()
     if access_token:
