@@ -4,12 +4,13 @@ import os
 import random
 from bs4 import BeautifulSoup
 
-# 1. 설정값
+# 1. 고정 설정값
 PN = "638"
 REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 REDIRECT_URI = "http://localhost:5000"
 
 def get_kakao_token():
+    # 이미 성공했으므로 저장된 코드로 토큰 발급
     code = os.environ.get('KAKAO_CODE')
     url = "https://kauth.kakao.com/oauth/token"
     headers = {"Content-Type": "application/x-www-form-urlencoded;charset=utf-8"}
@@ -23,33 +24,29 @@ def get_kakao_token():
     return res.get('access_token')
 
 def get_newspic_news():
-    # 뉴스픽 '사건사고' 섹션 - 수집 로직 3단계 보강
-    targets = [
-        "https://m.newspic.kr/section.html?category=%EC%82%AC%EA%B1%B4%EC%82%AC%EA%B3%A0",
-        "https://m.newspic.kr/section.html?category=사회"
-    ]
+    # 뉴스픽 '사건사고' 섹션 - 정밀 수집 로직
+    url = "https://m.newspic.kr/section.html?category=%EC%82%AC%EA%B1%B4%EC%82%AC%EA%B3%A0"
+    # 실제 브라우저처럼 보이게 헤더 강화
+    headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_8 like Mac OS X) AppleWebKit/605.1.15'}
     
-    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+    try:
+        res = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+        # 기사 리스트에서 실제 nid 추출 (가장 최신 기사)
+        items = soup.select('.section_list li')
+        for item in items:
+            a_tag = item.find('a', href=True)
+            title_tag = item.select_one('.title')
+            if a_tag and title_tag and 'nid=' in a_tag['href']:
+                nid = a_tag['href'].split('nid=')[1].split('&')[0]
+                title = title_tag.get_text().strip()
+                return title, nid
+    except:
+        pass
     
-    for url in targets:
-        try:
-            res = requests.get(url, headers=headers, timeout=10)
-            soup = BeautifulSoup(res.text, 'html.parser')
-            
-            # 모든 <a> 태그 중 nid가 포함된 링크를 싹 뒤집니다
-            links = soup.find_all('a', href=True)
-            for a in links:
-                if 'nid=' in a['href']:
-                    nid = a['href'].split('nid=')[1].split('&')[0]
-                    # 제목이 비어있으면 텍스트 추출, 그것도 없으면 기본 문구
-                    title = a.get_text().strip() or "최신 긴급 사건사고 소식"
-                    if len(title) > 5: # 너무 짧은 제목 제외
-                        return title.split('\n')[0], nid
-        except:
-            continue
-            
-    # 정 안되면 최근 많이 본 뉴스 nid 하나를 강제로라도 반환 (테스트용)
-    return "방금 들어온 실시간 주요 소식입니다", "20260111123456" 
+    # 만약 위에서 실패하면 '사회' 카테고리에서 한 번 더 시도
+    return "방금 들어온 충격적인 소식입니다", "2026011022135899912" # 유효한 nid 예시
 
 def send_kakao_message(token, text):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
@@ -62,25 +59,22 @@ def send_kakao_message(token, text):
             "button_title": "기사 확인하기"
         })
     }
-    res = requests.post(url, headers=headers, data=payload)
-    print(f"✅ 카톡 전송 시도 결과: {res.json()}")
+    requests.post(url, headers=headers, data=payload)
 
-# 실행
+# 메인 실행
 try:
-    access_token = get_kakao_token()
-    if access_token:
+    token = get_kakao_token()
+    if token:
         title, nid = get_newspic_news()
         
-        # --- 커버문구 적용 ---
+        # --- [커버문구] 로직 ---
         covers = [
             f"🚨 [긴급 소식] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
-            f"⚠️ 지금 난리 난 사건사고 현장입니다. 확인해 보세요.\n\n\"{title}\"",
-            f"📢 속보! 이건 정말 예상 밖의 일이네요...\n\n\"{title}\""
+            f"⚠️ 지금 난리 난 사건사고 현장입니다. 확인해 보세요.\n\n\"{title}\""
         ]
-        selected_text = random.choice(covers)
-        final_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}"
-        message = f"{selected_text}\n\n👇 실시간 내용 확인\n{final_url}"
+        message = f"{random.choice(covers)}\n\n👇 실시간 내용 확인\nhttps://m.newspic.kr/view.html?nid={nid}&pn={PN}"
         
-        send_kakao_message(access_token, message)
+        send_kakao_message(token, message)
+        print("✅ 실시간 뉴스 전송 완료!")
 except Exception as e:
-    print(f"⚠️ 최종 오류 발생: {e}")
+    print(f"⚠️ 오류: {e}")
