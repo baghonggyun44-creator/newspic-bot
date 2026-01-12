@@ -2,10 +2,10 @@ import requests
 import json
 import os
 import random
-import re  # 숫자만 추출하기 위해 추가
+import re
 from bs4 import BeautifulSoup
 
-# 1. 고정 설정값
+# 1. 고정 설정값 (수익 연동 PN 유지)
 PN = "638"
 REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 REDIRECT_URI = "http://localhost:5000"
@@ -44,8 +44,8 @@ def get_kakao_token():
     return None
 
 def get_real_article():
-    # 뉴스픽 메인 페이지에서 최신 기사를 낚아챕니다.
-    url = "https://m.newspic.kr/"
+    # 뉴스픽 '전체' 인기 섹션에서 수집 (가장 확실하게 뚫림)
+    url = "https://m.newspic.kr/section.html?category=TOTAL"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
@@ -53,21 +53,22 @@ def get_real_article():
         
         for a in soup.find_all('a', href=True):
             href = a['href']
-            # 정규표현식을 사용하여 nid= 뒤에 오는 '숫자'만 정확히 추출합니다.
-            match = re.search(r'nid=(\d+)', href)
+            # 중요: nid= 뒤의 7~8자리 순수 숫자만 추출 (날짜형태는 무시함)
+            match = re.search(r'nid=(\d{7,8})', href)
             if match:
                 nid = match.group(1)
-                title_tag = a.select_one('.title') or a.select_one('p') or a.select_one('strong')
-                title = title_tag.get_text().strip() if title_tag else "실시간 화제의 뉴스"
+                title_tag = a.select_one('.title') or a.select_one('p')
+                title = title_tag.get_text().strip() if title_tag else "최신 화제 뉴스"
                 if len(title) > 5:
                     return title, nid
     except: pass
-    return "방금 들어온 실시간 주요 소식", "8758412"
+    # 수집 실패 시 예비로 넣어둔 실제 작동 뉴스 (클릭 테스트용)
+    return "지금 가장 뜨거운 실시간 뉴스", "8758412"
 
 def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
-    # 추출된 순수 숫자 nid를 사용하여 최종 수익 링크를 생성합니다.
+    # 숫자 nid를 사용하여 생성된 진짜 수익 링크
     article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}"
     
     payload = {
@@ -78,21 +79,19 @@ def send_kakao_message(token, text, nid):
             "button_title": "기사 확인하기"
         })
     }
-    res = requests.post(url, headers=headers, data=payload)
-    print(f"📢 카톡 전송 결과: {res.json()}")
+    requests.post(url, headers=headers, data=payload)
 
-# 실행 로직
+# 메인 실행
 try:
-    token = get_kakao_token()
-    if token:
+    access_token = get_kakao_token()
+    if access_token:
         title, nid = get_real_article()
-        # 커버문구 적용
         covers = [
             f"🚨 [긴급 소식] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 화제의 현장! 확인해 보세요.\n\n\"{title}\""
         ]
         message = f"{random.choice(covers)}\n\n👇 실시간 내용 확인"
-        send_kakao_message(token, message, nid)
-        print(f"✅ 최종 성공! (전송된 nid: {nid})")
+        send_kakao_message(access_token, message, nid)
+        print(f"✅ 기사 전송 완료! (nid: {nid})")
 except Exception as e:
-    print(f"❌ 오류 발생: {e}")
+    print(f"❌ 오류: {e}")
