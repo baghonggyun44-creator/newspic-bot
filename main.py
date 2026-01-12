@@ -54,7 +54,8 @@ def get_real_article():
         if nids:
             target_nid = list(set(nids))[0]
             soup = BeautifulSoup(res.text, 'html.parser')
-            title = soup.select_one('.title').text.strip() if soup.select_one('.title') else "실시간 화제의 소식"
+            title_tag = soup.select_one('.title') or soup.find('p')
+            title = title_tag.text.strip() if title_tag else "실시간 화제의 소식"
             return title, target_nid
     except:
         pass
@@ -65,8 +66,9 @@ def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
     
-    # 우회 링크 전략: 파라미터 구조를 최적화하여 차단을 방지합니다.
-    article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}&cp=kakao"
+    # [핵심] 차단 우회 파라미터 조합
+    # cp=kakao와 _id를 붙여 뉴스픽이 정상적인 공유로 인식하게 만듭니다.
+    article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}&cp=kakao&_id={random.randint(1000, 9999)}"
     
     payload = {
         "template_object": json.dumps({
@@ -82,13 +84,13 @@ def send_kakao_message(token, text, nid):
     res = requests.post(url, headers=headers, data=payload)
     print(f"📢 카톡 전송 상세 로그: {res.json()}")
 
-# 실행 부분
+# 실행
 try:
     token = get_kakao_token()
     if token:
         title, nid = get_real_article()
         
-        # 커버문구 적용 (어제 약속한 폼 그대로)
+        # 커버문구 적용 (약속하신 대로!)
         covers = [
             f"🚨 [긴급] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 화제의 현장! 확인해 보세요.\n\n\"{title}\""
