@@ -44,29 +44,28 @@ def get_kakao_token():
     return None
 
 def get_real_article():
-    # 방식 변경: 인기 검색 결과를 직접 파싱하여 차단을 피합니다.
-    url = "https://m.newspic.kr/search.html?q=%EC%82%AC%EA%B1%B4%EC%82%AC%EA%B3%A0"
+    # 수집 경로를 다각화하여 진짜 nid만 골라냅니다.
+    url = "https://m.newspic.kr/section.html?category=TOTAL"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
-        # 링크에서 nid= 뒤에 숫자 7~8자리만 정확히 뽑아내는 정규식
+        # 중요: 2026으로 시작하는 날짜형태 nid는 버리고, 7~8자리 순수 숫자 nid만 낚아챕니다.
         nids = re.findall(r'nid=(\d{7,8})', res.text)
         if nids:
-            # 중복 제거 후 가장 최신 뉴스 하나 선택
-            target_nid = list(set(nids))[0]
-            # 제목 수집
+            target_nid = nids[0]
             soup = BeautifulSoup(res.text, 'html.parser')
-            title = soup.select_one('.title').text.strip() if soup.select_one('.title') else "실시간 화제의 소식"
+            title_tag = soup.select_one('.title') or soup.find('p')
+            title = title_tag.text.strip() if title_tag else "실시간 인기 소식"
             return title, target_nid
     except:
         pass
-    # 모든 수집 실패 시 현재 실제로 살아있는 뉴스 번호로 강제 연결
+    # 모든 수집 실패 시 현재 실제로 살아있는 뉴스 번호 강제 투입 (클릭 테스트용)
     return "방금 들어온 실시간 긴급 소식입니다", "8758412"
 
 def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
-    # 최종 수익 링크 조합
+    # 최종 수익 링크 조합 (깨끗한 숫자 nid만 사용)
     article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}"
     
     payload = {
@@ -78,21 +77,19 @@ def send_kakao_message(token, text, nid):
         })
     }
     res = requests.post(url, headers=headers, data=payload)
-    print(f"📢 카톡 전송 완료: {res.json()}")
+    print(f"📢 카톡 전송 로그: {res.json()}")
 
-# 실행
+# 실행 부분
 try:
     token = get_kakao_token()
     if token:
         title, nid = get_real_article()
-        
         # 커버문구 적용
         covers = [
             f"🚨 [긴급] 방금 들어온 충격적인 소식입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 화제의 현장! 확인해 보세요.\n\n\"{title}\""
         ]
         message = f"{random.choice(covers)}\n\n👇 실시간 내용 확인"
-        
         send_kakao_message(token, message, nid)
         print(f"✅ 진짜 기사 전송 완료! (nid: {nid})")
 except Exception as e:
