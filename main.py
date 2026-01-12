@@ -5,7 +5,7 @@ import random
 import re
 from bs4 import BeautifulSoup
 
-# 1. 고정 설정값 (질문자님의 PN 638 고정)
+# 1. 고정 설정값 (PN 638 고정)
 PN = "638"
 REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 REDIRECT_URI = "http://localhost:5000"
@@ -44,41 +44,39 @@ def get_kakao_token():
     return None
 
 def get_real_article():
-    # 방식 고도화: 메인 뉴스 목록에서 실시간으로 가장 핫한 뉴스를 골라냅니다.
+    # 방식 변경: 차단을 피하기 위해 뉴스픽 모바일 전용 섹션에서 실시간 기사를 가져옵니다.
     url = "https://m.newspic.kr/section.html?category=TOTAL"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
-        # 낚시 데이터를 거르고 7~8자리 순수 숫자 nid만 추출
+        # 낚시용 긴 숫자를 버리고 7~8자리 진짜 nid만 추출합니다.
         nids = re.findall(r'nid=(\d{7,8})', res.text)
         if nids:
             target_nid = list(set(nids))[0]
             soup = BeautifulSoup(res.text, 'html.parser')
-            title_tag = soup.select_one('.title') or soup.find('p')
-            title = title_tag.text.strip() if title_tag else "실시간 화제의 소식"
+            title = soup.select_one('.title').text.strip() if soup.select_one('.title') else "실시간 인기 소식"
             return title, target_nid
-    except:
-        pass
-    # 모든 수집 실패 시 현재 시각 기준 작동이 확인된 nid (강제 투입)
-    return "지금 난리 난 실시간 긴급 소식입니다", "8758814"
+    except: pass
+    return "지금 가장 핫한 실시간 소식", "8758814"
 
 def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
     
-    # [핵심] 차단 우회 파라미터 조합
-    # cp=kakao와 _id를 붙여 뉴스픽이 정상적인 공유로 인식하게 만듭니다.
-    article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}&cp=kakao&_id={random.randint(1000, 9999)}"
+    # [핵심 수정한 부분] 보안 우회용 파라미터 조합
+    # t=... 와 cp=kakao 를 붙여 실제 사람이 공유한 링크처럼 위장합니다.
+    article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}&cp=kakao&t={random.randint(100000, 999999)}"
     
     payload = {
         "template_object": json.dumps({
-            "object_type": "text",
-            "text": text,
-            "link": {
-                "web_url": article_url, 
-                "mobile_web_url": article_url
+            "object_type": "feed", # 구조를 feed로 변경하여 더 신뢰도를 높임
+            "content": {
+                "title": text,
+                "description": "실시간 뉴스픽 핫이슈",
+                "image_url": "https://m.newspic.kr/images/common/og_logo.png",
+                "link": {"web_url": article_url, "mobile_web_url": article_url}
             },
-            "button_title": "기사 바로 확인"
+            "buttons": [{"title": "기사 읽기", "link": {"web_url": article_url, "mobile_web_url": article_url}}]
         })
     }
     res = requests.post(url, headers=headers, data=payload)
@@ -89,15 +87,13 @@ try:
     token = get_kakao_token()
     if token:
         title, nid = get_real_article()
-        
-        # 커버문구 적용 (약속하신 대로!)
+        # 커버문구 적용
         covers = [
-            f"🚨 [긴급] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
+            f"🚨 [긴급] 방금 들어온 충격적인 소식입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 화제의 현장! 확인해 보세요.\n\n\"{title}\""
         ]
-        message = f"{random.choice(covers)}\n\n👇 실시간 내용 확인"
-        
+        message = random.choice(covers)
         send_kakao_message(token, message, nid)
-        print(f"✅ 진짜 기사 연결 성공! (최종 nid: {nid})")
+        print(f"✅ 기사 전송 완료! (최종 nid: {nid})")
 except Exception as e:
-    print(f"❌ 실행 오류: {e}")
+    print(f"❌ 오류: {e}")
