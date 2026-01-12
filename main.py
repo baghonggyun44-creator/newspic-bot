@@ -88,7 +88,7 @@ try:
         title, nid = get_real_article()
         # 약속하신 '커버문구' 적용
         covers = [
-            f"🚨 [긴급] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
+            f"🚨 [긴급 소식] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 화제의 현장! 확인해 보세요.\n\n\"{title}\""
         ]
         message = random.choice(covers)
