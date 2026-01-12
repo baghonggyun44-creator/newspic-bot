@@ -1,0 +1,38 @@
+name: Kakao NewsPic AutoPost
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 * * * *'  # 매 시간 정시마다 자동으로 돈을 벌어옵니다!
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # 토큰 자동 저장을 위해 꼭 필요합니다.
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Run bot
+        run: python main.py
+        env:
+          KAKAO_CODE: ${{ secrets.KAKAO_CODE }}
+
+      - name: Commit and push token change
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "action@github.com"
+          git add kakao_token.json || echo "No token file yet"
+          git commit -m "Update Kakao Token" || echo "No changes to commit"
+          git push
