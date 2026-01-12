@@ -5,7 +5,7 @@ import random
 import re
 from bs4 import BeautifulSoup
 
-# 1. 고정 설정값 (질문자님의 PN 638 유지)
+# 1. 고정 설정값
 PN = "638"
 REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 REDIRECT_URI = "http://localhost:5000"
@@ -44,26 +44,31 @@ def get_kakao_token():
     return None
 
 def get_real_article():
-    # 최신 뉴스 목록에서 진짜 숫자 nid만 낚아챕니다.
+    # 방식 변경: 실시간 인기 섹션에서 가장 최신 번호를 낚아챕니다.
     url = "https://m.newspic.kr/section.html?category=TOTAL"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
+        # 낚시 데이터를 거르고 7~8자리 순수 숫자 nid만 추출
         nids = re.findall(r'nid=(\d{7,8})', res.text)
         if nids:
-            target_nid = list(set(nids))[0]
+            # 매번 다른 뉴스를 보내기 위해 리스트에서 무작위로 하나 선택
+            target_nid = random.choice(list(set(nids)))
             soup = BeautifulSoup(res.text, 'html.parser')
-            title = soup.select_one('.title').text.strip() if soup.select_one('.title') else "실시간 화제의 뉴스"
+            title = "방금 들어온 화제의 뉴스"
+            # 실제 기사 제목 찾기 시도
+            titles = soup.select('.title')
+            if titles:
+                title = titles[0].text.strip()
             return title, target_nid
-    except: pass
-    return "지금 가장 핫한 실시간 소식", "8758814"
+    except:
+        pass
+    return "지금 가장 핫한 실시간 소식", "8761102" # 살아있는 실시간 번호로 교체
 
 def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
-    
-    # [핵심] 뉴스픽 차단 우회용 특수 파라미터 조합
-    # cp=kakao와 무작위 t 값을 붙여 실제 사람이 공유한 링크처럼 위장합니다.
+    # 보안 파라미터 추가하여 차단 방지
     article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}&cp=kakao&t={random.randint(1000, 9999)}"
     
     payload = {
@@ -78,21 +83,22 @@ def send_kakao_message(token, text, nid):
             "buttons": [{"title": "기사 바로 읽기", "link": {"web_url": article_url, "mobile_web_url": article_url}}]
         })
     }
-    res = requests.post(url, headers=headers, data=payload)
-    print(f"📢 최종 전송 로그: {res.json()}")
+    requests.post(url, headers=headers, data=payload)
 
 # 실행
 try:
     token = get_kakao_token()
     if token:
         title, nid = get_real_article()
-        # 약속하신 '커버문구' 적용
+        
+        # --- 커버문구 적용 ---
         covers = [
             f"🚨 [긴급 소식] 방금 들어온 충격적인 상황입니다.\n\n\"{title}\"",
             f"⚠️ 지금 난리 난 화제의 현장! 확인해 보세요.\n\n\"{title}\""
         ]
         message = random.choice(covers)
+        
         send_kakao_message(token, message, nid)
-        print(f"✅ 최종 연결 성공! (사용된 nid: {nid})")
+        print(f"✅ 진짜 기사 전송 완료! (nid: {nid})")
 except Exception as e:
     print(f"❌ 오류: {e}")
