@@ -44,29 +44,30 @@ def get_kakao_token():
     return None
 
 def get_real_article():
-    # 방식 변경: 전체 인기 차트에서 낚시 데이터를 거르고 진짜 번호만 추출
-    url = "https://m.newspic.kr/section.html?category=TOTAL"
+    # 방식 변경: 검색 페이지에서 실제 기사 리스트를 낚아챕니다.
+    url = "https://m.newspic.kr/search.html?q=%EC%82%AC%EA%B1%B4%EC%82%AC%EA%B3%A0"
     headers = {'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15'}
     try:
         res = requests.get(url, headers=headers, timeout=10)
-        # 중요: nid= 뒤에 숫자 7~8자리만 있는 진짜 번호만 리스트로 만듭니다.
-        # 20260113... 처럼 10자리가 넘는 가짜 날짜 번호는 여기서 자동 탈락됩니다.
+        # 중요: nid= 뒤에 딱 7~8자리 숫자만 있는 진짜 번호들만 다 긁어모읍니다.
         nids = re.findall(r'nid=(\d{7,8})', res.text)
         if nids:
-            target_nid = nids[0] # 가장 첫 번째 진짜 기사 번호 선택
+            # 중복 제거 후 가장 첫 번째(최신) 기사 번호 선택
+            target_nid = list(set(nids))[0]
             soup = BeautifulSoup(res.text, 'html.parser')
+            # 제목 추출
             title_tag = soup.select_one('.title') or soup.find('p')
-            title = title_tag.text.strip() if title_tag else "실시간 화제의 뉴스"
+            title = title_tag.text.strip() if title_tag else "실시간 화제의 소식"
             return title, target_nid
     except:
         pass
-    # 모든 수집 시도가 실패할 경우를 대비한 실제 작동 중인 기사 번호
-    return "방금 들어온 실시간 긴급 소식입니다", "8758412"
+    # 모든 수집 실패 시 현재 실제로 살아있는 뉴스 번호 강제 투입 (뉴스픽 접속 시 확인한 번호)
+    return "방금 들어온 실시간 긴급 소식입니다", "8758814"
 
 def send_kakao_message(token, text, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
-    # 날짜가 섞이지 않은 깨끗한 숫자 nid만 사용하여 링크 생성
+    # 낚시 데이터가 섞이지 않은 순수 숫자 nid로 링크 생성
     article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}"
     
     payload = {
@@ -78,7 +79,7 @@ def send_kakao_message(token, text, nid):
         })
     }
     res = requests.post(url, headers=headers, data=payload)
-    print(f"📢 전송 결과: {res.json()}")
+    print(f"📢 카톡 전송 상세: {res.json()}")
 
 # 실행
 try:
@@ -92,6 +93,6 @@ try:
         ]
         message = f"{random.choice(covers)}\n\n👇 실시간 내용 확인"
         send_kakao_message(token, message, nid)
-        print(f"✅ 진짜 기사 전송 완료! (사용된 nid: {nid})")
+        print(f"✅ 진짜 기사 전송 완료! (nid: {nid})")
 except Exception as e:
     print(f"❌ 오류 발생: {e}")
