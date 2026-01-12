@@ -43,47 +43,49 @@ def get_kakao_token():
         return tokens['access_token']
     return None
 
-# [핵심 로직] 텔레그램 코드의 우선순위 탐색 적용
+# [도입로직] 텔레그램 소스코드의 정밀 수집 방식 적용
 def get_verified_article():
-    # 사건사고(12) 섹션을 타겟팅하여 실제 모바일 환경처럼 접근
+    # 텔레그램 코드에서 사용한 카테고리 우선순위 1위(사건사고:12) 섹션 타겟
     url = "https://m.newspic.kr/section.html?category=12"
-    # 실제 아이폰 14 프로 환경으로 위장
+    
+    # [핵심] 뉴스픽 보안팀을 속이는 브라우저 위장 헤더 (텔레그램 코드 응용)
     headers = {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.5 Mobile/15E148 Safari/604.1',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Referer': 'https://m.newspic.kr/'
+        'Referer': 'https://m.newspic.kr/',
+        'Accept-Language': 'ko-KR,ko;q=0.9'
     }
     
     try:
         res = requests.get(url, headers=headers, timeout=15)
-        # 텔레그램 패턴: nid= 뒤의 7~8자리 숫자만 필터링
+        # 텔레그램 패턴: nid= 뒤의 7~8자리 숫자만 정확하게 필터링
         nids = list(set(re.findall(r'nid=(\d{7,8})', res.text)))
         
         if nids:
-            # 뉴스픽의 추적을 피하기 위해 리스트에서 하나를 랜덤하게 선택
             target_nid = random.choice(nids)
             soup = BeautifulSoup(res.text, 'html.parser')
-            
             # 텔레그램 소스코드 스타일의 제목 추출
             title_tag = soup.select_one('.title') or soup.select_one('.txt_area p')
             title = title_tag.get_text().strip() if title_tag else "실시간 핫이슈"
-            
             return title, target_nid
     except: pass
-    return "지금 가장 난리난 실시간 소식", "8761400"
+    return "지금 가장 뜨거운 실시간 뉴스", "8761400"
 
 # [수익 강화] 커버문구 및 수익 링크 조합
 def send_kakao_message(token, title, nid):
     url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
     headers = {"Authorization": f"Bearer {token}"}
     
-    # 수익 누락을 방지하는 PN 강제 결합 및 보안 파라미터(cp, t) 추가
+    # [수익 해결] 주소에 PN(638)을 직접 포함하고 우회 파라미터(cp, t) 추가
     article_url = f"https://m.newspic.kr/view.html?nid={nid}&pn={PN}&cp=kakao&t={random.randint(1000, 9999)}"
     
-    # 제목에 따른 자동 커버문구 생성 (텔레그램 makeXHook 응용)
-    if any(k in title for k in ["사망", "충격", "사고"]): hook = "🚨 [긴급속보] 방금 들어온 충격적인 상황"
-    elif any(k in title for k in ["논란", "경악", "폭로"]): hook = "😱 지금 다들 난리난 역대급 논란"
-    else: hook = "🔥 지금 가장 많이 보는 뉴스"
+    # 텔레그램 makeXHook 로직 기반 자동 커버문구
+    if any(k in title for k in ["사망", "충격", "사고", "결국"]): 
+        hook = "🚨 [긴급속보] 방금 들어온 충격적인 상황입니다"
+    elif any(k in title for k in ["논란", "경악", "폭로"]): 
+        hook = "😱 지금 다들 난리난 역대급 논란"
+    else: 
+        hook = "🔥 지금 가장 많이 보는 뉴스"
     
     final_text = f"{hook}\n\n\"{title}\""
     
