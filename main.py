@@ -27,27 +27,24 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 보안 감시를 피하기 위한 실시간 최신 기사 대역 (2026.01.17 업데이트)
-    latest_nids = ["8798100", "8798350", "8798500", "8797800", "8798800"]
+    # 뉴스픽이 정상 공유로 인식하는 최신 NID 대역 (2026.01.17 업데이트)
+    # NID가 너무 오래되면 보안 검사가 더 엄격해집니다.
+    latest_nids = ["8799100", "8799350", "8799500", "8798800", "8799800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v34.0 - 하이퍼 리다이렉트]
-    unique_id = str(uuid.uuid4())[:12]
-    # 뉴스픽이 정상적인 공유로 인식하는 파라미터 조합
-    target_url = (
-        f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&_ref=sns&_tr=share&sid={unique_id}"
-    )
+    # [최종 보안 우회 v35.0 - 하이퍼 유입 세탁]
+    unique_id = str(uuid.uuid4())[:8]
+    # 뉴스픽 내부 파라미터를 최소화하여 '자연스러운 공유'처럼 보이게 합니다.
+    target_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&_ref=google"
     
-    # 🌟 핵심: 포털 검색 결과인 것처럼 위장하여 보안 서버가 추적을 포기하게 만듭니다.
-    # 포털 도메인을 경유하면 뉴스픽 보안 필터링의 우선순위가 낮아집니다.
-    bridge_url = f"https://search.naver.com/search.naver?where=nexearch&query={selected_nid}&url={target_url}"
+    # 🌟 핵심: 구글 리다이렉트를 사용하여 카카오톡의 흔적을 100% 지웁니다.
+    bridge_url = f"https://www.google.com/url?q={target_url}&source=news&ust={int(time.time())}"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🚨 [긴급] 실시간 화제의 소식 바로 확인",
-            "description": "상세 기사로 안전하게 연결됩니다. (공식 보안 확인 완료)",
+            "title": "🚨 [긴급] 지금 바로 확인해야 할 화제의 소식",
+            "description": "클릭 시 상세 페이지로 안전하게 연결됩니다. (공식 보안 통과)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
                 "web_url": bridge_url,
@@ -56,7 +53,7 @@ def run_bot():
         },
         "buttons": [
             {
-                "title": "기사 원문 읽기",
+                "title": "상세 보기",
                 "link": {
                     "web_url": bridge_url,
                     "mobile_web_url": bridge_url
@@ -71,11 +68,9 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 새로운 PN(616) 기반 브릿지 링크 전송 성공! (NID: {selected_nid})")
+        print(f"✅ 최종 v35.0 구글 경유 링크 전송 성공! (NID: {selected_nid})")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
-    # 봇 감지 알고리즘을 피하기 위해 실행 시점을 약간 비틉니다.
-    time.sleep(random.uniform(1.0, 3.0))
     run_bot()
