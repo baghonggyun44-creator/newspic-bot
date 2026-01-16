@@ -30,17 +30,17 @@ def run_bot():
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # [우회 로직] 뉴스픽 보안 필터를 통과하기 위한 다중 파라미터 조합
-    # 1. mode=view_all: 리다이렉트 방지 모드
-    # 2. utm 파라미터: 정상적인 SNS 유입 경로로 위장
-    # 3. v=1.1: 최신 배포 버전 신호 추가
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=1.1&utm_source=kakao&utm_medium=sns&utm_campaign=share"
+    # [우회 로직] im.newspic.kr 도메인 유지를 위한 강력한 파라미터 조합
+    # 1. mode=view_all: 리다이렉트를 막고 상세 페이지를 강제 노출
+    # 2. utm 파라미터: 뉴스픽 보안 필터가 '정상 SNS 공유'로 인식하게 위장
+    # 3. v=1.2: 최신 배포 규격 신호 전달
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=1.2&utm_source=kakao&utm_medium=organic&utm_campaign=share"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔥 [실시간 핫이슈] 개별 기사 확인하기",
-            "description": "클릭하시면 뉴스픽 상세 기사 페이지로 즉시 이동합니다.",
+            "title": "🔥 [실시간 뉴스] 상세 내용 확인하기",
+            "description": "클릭하시면 뉴스픽 상세 기사 페이지로 즉시 연결됩니다.",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
                 "web_url": article_url,
