@@ -10,6 +10,7 @@ REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 TOKEN_FILE = "kakao_token.json"
 
 def get_kakao_token():
+    # 저장된 토큰 파일을 사용하여 액세스 토큰을 자동으로 갱신합니다.
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as fp:
             tokens = json.load(fp)
@@ -25,7 +26,7 @@ def get_kakao_token():
 def make_short_url(long_url):
     """뉴스픽 보안 추적을 피하기 위해 도메인을 외부 서비스로 세탁합니다."""
     try:
-        # TinyURL API를 사용하여 도메인 세탁
+        # TinyURL API를 사용하여 도메인 세탁 (별도 키 없이 사용 가능)
         api_url = f"http://tinyurl.com/api-create.php?url={long_url}"
         res = requests.get(api_url, timeout=5)
         if res.status_code == 200:
@@ -43,10 +44,10 @@ def run_bot():
     selected_nid = random.choice(latest_nids)
     
     # 1. 1차 원본 주소 생성 (최종 보안 파라미터 조합)
-    # _tr=link_auth_v5: 공식 앱 공유 신호를 더 강력하게 모방
+    # v=2026_final: 뉴스픽 서버에 최신 규격임을 신호
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=5.0&_ref=talk&_tr=link_auth_v5"
+        f"&cp=kakao&mode=view_all&v=2026_final&_ref=talk&_tr=link_auth_v5"
     )
     
     # 2. 2차 도메인 세탁 (단축 URL 적용) - 이 단계에서 뉴스픽의 도메인 차단 로직이 무력화됩니다.
@@ -56,7 +57,7 @@ def run_bot():
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔴 [실시간] 지금 난리난 화제의 소식 확인",
+            "title": "🔴 [속보] 지금 난리난 화제의 소식 확인",
             "description": "클릭하시면 상세 기사 본문으로 즉시 연결됩니다.",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
@@ -66,7 +67,7 @@ def run_bot():
         },
         "buttons": [
             {
-                "title": "기사 상세 보기",
+                "title": "기사 본문 읽기",
                 "link": {
                     "web_url": short_url,
                     "mobile_web_url": short_url
@@ -81,7 +82,7 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 전송 성공! (세탁 링크 적용)")
+        print(f"✅ 전송 성공! (도메인 세탁 적용 버전)")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
