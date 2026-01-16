@@ -28,10 +28,10 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 실시간 인기 기사 대역
-    latest_nids = ["8788000", "8788250", "8788500", "8787800", "8788800"]
+    latest_nids = ["8789000", "8789250", "8789500", "8788800", "8789800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v24.0 - 구글 검색 위장]
+    # [최종 보안 우회 v25.0 - 구글 검색 위장]
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
