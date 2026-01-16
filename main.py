@@ -32,9 +32,9 @@ def run_bot():
     
     # [보안 우회 핵심] im.newspic.kr 도메인 유지를 위한 정밀 파라미터 조합
     # 1. mode=view_all: 시스템 리다이렉트를 중단하고 상세 페이지 강제 고정
-    # 2. v=1.4: 최신 보안 우회 규격 신호 전달
+    # 2. v=1.5: 최신 보안 우회 규격 신호 전달
     # 3. utm_source/medium/campaign: 신뢰할 수 있는 정상 유입으로 위장
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=1.4&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share"
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=1.5&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share"
     
     template = {
         "object_type": "feed",
