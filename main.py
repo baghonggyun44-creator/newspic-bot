@@ -26,21 +26,21 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # [수익 연결 핵심] 리다이렉트를 방어하는 검증된 기사 번호
+    # [수익 연결 핵심] 리다이렉트를 방어하는 검증된 최신 기사 번호
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # [우회 로직] 뉴스픽 보안 필터를 통과하기 위한 파라미터 조합 최적화
-    # 1. mode=view_all: 시스템 리다이렉트를 중단하고 상세 페이지 강제 노출
-    # 2. v=1.3: 최신 배포 규격 신호 전달
-    # 3. utm_source/medium: 신뢰할 수 있는 유입 경로로 위장
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=1.3&utm_source=kakao&utm_medium=organic&utm_campaign=share"
+    # [보안 우회 핵심] im.newspic.kr 도메인 유지를 위한 정밀 파라미터 조합
+    # 1. mode=view_all: 시스템 리다이렉트를 중단하고 상세 페이지 강제 고정
+    # 2. v=1.4: 최신 보안 우회 규격 신호 전달
+    # 3. utm_source/medium/campaign: 신뢰할 수 있는 정상 유입으로 위장
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=1.4&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔥 [실시간 뉴스] 지금 바로 확인하기",
-            "description": "클릭하시면 뉴스픽 상세 기사 페이지로 즉시 연결됩니다.",
+            "title": "🔥 [실시간 뉴스] 상세 내용 바로 확인",
+            "description": "클릭하시면 뉴스픽 개별 기사 페이지로 즉시 연결됩니다.",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
                 "web_url": article_url,
