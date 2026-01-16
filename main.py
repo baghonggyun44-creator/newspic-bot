@@ -31,7 +31,7 @@ def run_bot():
     latest_nids = ["8788000", "8788250", "8788500", "8787800", "8788800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v23.0 - 구글 검색 위장]
+    # [최종 보안 우회 v24.0 - 구글 검색 위장]
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
