@@ -11,6 +11,7 @@ REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 TOKEN_FILE = "kakao_token.json"
 
 def get_kakao_token():
+    # 저장된 토큰 파일을 사용하여 액세스 토큰을 자동으로 갱신합니다.
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as fp:
             tokens = json.load(fp)
@@ -28,10 +29,10 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 최신 기사 대역 (2026년 1월 기준)
-    latest_nids = ["8771000", "8771200", "8771500", "8770800", "8771800"]
+    latest_nids = ["8772000", "8772200", "8772500", "8771800", "8772800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v8.0 핵심]
+    # [최종 보안 우회 v9.0 핵심]
     # 1. uuid4: 매 접속마다 고유 ID를 부여하여 중복 접속 차단 회피
     # 2. _tr=organic_share: 유료 광고가 아닌 자연스러운 공유 유입으로 위장
     # 3. mode=view_all: 리다이렉트 엔진을 강제로 종료시키고 상세 페이지 고정
