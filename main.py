@@ -48,36 +48,35 @@ def run_bot():
         print("❌ 토큰 오류! KAKAO_CODE를 새로 업데이트하세요.")
         return
 
-    # [중요] 뉴스픽 서버 접근 차단 방지를 위한 정밀 헤더 설정
+    # [수정] 뉴스픽 서버 보안 우회를 위한 정밀 헤더 설정
     url = "https://partners.newspic.kr/main/contentList"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1',
+        'User-Agent': 'Mozilla/5.0 (Linux; Android 13; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Mobile Safari/537.36',
         'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': 'https://partners.newspic.kr',
-        'Referer': 'https://partners.newspic.kr/main/index'
+        'Referer': 'https://partners.newspic.kr/',
+        'X-Requested-With': 'XMLHttpRequest'
     }
-    data = {'channelNo': '12', 'pageSize': '20'}
     
     try:
-        # 뉴스픽 서버에 요청 (3번까지 재시도)
-        for i in range(3):
-            res = requests.post(url, headers=headers, data=data, timeout=10)
+        # 뉴스픽 서버에 기사 목록 요청 (최대 3회 시도)
+        target = None
+        for _ in range(3):
+            res = requests.post(url, headers=headers, data={'channelNo': '12', 'pageSize': '20'}, timeout=10)
             if res.status_code == 200:
-                articles = res.json().get('recomList', [])
-                if articles:
-                    target = articles[0]
+                data = res.json()
+                if data.get('recomList'):
+                    target = data['recomList'][0]
                     break
-            time.sleep(2)
-        else:
-            print("⚠️ 뉴스픽에서 기사를 가져오지 못했습니다.")
+            time.sleep(1)
+        
+        if not target:
+            print("⚠️ 뉴스픽에서 기사를 가져오지 못했습니다. (서버 응답 없음)")
             return
     except Exception as e:
-        print(f"❌ 뉴스픽 데이터 읽기 실패: {e}")
+        print(f"❌ 뉴스픽 데이터 처리 중 오류: {e}")
         return
     
-    # 뉴스픽 링크 생성 (im.newspic.kr 적용)
+    # 뉴스픽 링크 생성 (사용자님의 im.newspic.kr 적용)
     article_url = f"https://im.newspic.kr/view.html?nid={target['nid']}&pn={PN}&cp=kakao"
     
     template = {
@@ -92,9 +91,9 @@ def run_bot():
     }
 
     # 카카오톡 전송
-    headers_kakao = {"Authorization": f"Bearer {token}"}
     res_kakao = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
-                              headers=headers_kakao, data={"template_object": json.dumps(template)})
+                              headers={"Authorization": f"Bearer {token}"}, 
+                              data={"template_object": json.dumps(template)})
     print(f"📢 전송 결과: {res_kakao.json()}")
 
 if __name__ == "__main__":
