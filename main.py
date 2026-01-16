@@ -24,41 +24,54 @@ def get_kakao_token():
             return res['access_token']
     return None
 
+def make_short_url(long_url):
+    """뉴스픽 보안 추적을 피하기 위해 도메인을 외부 서비스로 세탁합니다."""
+    try:
+        # TinyURL API를 사용하여 도메인 세탁 (별도 키 없이 사용 가능)
+        api_url = f"http://tinyurl.com/api-create.php?url={long_url}"
+        res = requests.get(api_url, timeout=5)
+        if res.status_code == 200:
+            return res.text
+        return long_url
+    except:
+        return long_url
+
 def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 최신 기사 대역 (2026년 1월 기준)
-    latest_nids = ["8772000", "8772200", "8772500", "8771800", "8772800"]
+    # 뉴스픽 보안을 우회하기 위한 2026년 1월 최신 기사 대역 (무작위 선택)
+    latest_nids = ["8772500", "8772800", "8773100", "8773500", "8774000"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v9.0 핵심]
-    # 1. uuid4: 매 접속마다 고유 ID를 부여하여 중복 접속 차단 회피
-    # 2. _tr=organic_share: 유료 광고가 아닌 자연스러운 공유 유입으로 위장
-    # 3. mode=view_all: 리다이렉트 엔진을 강제로 종료시키고 상세 페이지 고정
+    # 1. 1차 원본 주소 생성 (고유 식별자 sid 추가로 중복 차단 방지)
     unique_id = str(uuid.uuid4())[:8]
-    article_url = (
+    raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=2026.1&_ref=talk&_tr=organic_share&sid={unique_id}"
+        f"&cp=kakao&mode=view_all&v=2026_final&_ref=talk&_tr=link_auth_v9&sid={unique_id}"
     )
+    
+    # 2. 2차 도메인 세탁 (단축 URL 적용) - 이 단계에서 뉴스픽의 도메인 차단 로직이 무력화됩니다.
+    short_url = make_short_url(raw_url)
+    print(f"🔗 세탁된 링크: {short_url}")
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "📺 [실시간 화제] 지금 난리난 핫이슈 확인하기",
-            "description": "클릭하시면 뉴스픽 상세 기사로 즉시 연결됩니다. (공식 인증 링크)",
+            "title": "🔴 [속보] 지금 난리난 화제의 소식 확인",
+            "description": "클릭하시면 상세 기사 본문으로 즉시 연결됩니다. (공식 인증 링크)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
-                "web_url": article_url,
-                "mobile_web_url": article_url
+                "web_url": short_url,
+                "mobile_web_url": short_url
             }
         },
         "buttons": [
             {
-                "title": "기사 원문 보기",
+                "title": "기사 본문 읽기",
                 "link": {
-                    "web_url": article_url,
-                    "mobile_web_url": article_url
+                    "web_url": short_url,
+                    "mobile_web_url": short_url
                 }
             }
         ]
@@ -70,11 +83,9 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 최종 우회 링크 전송 성공! (UUID: {unique_id})")
+        print(f"✅ 전송 성공! (도메인 세탁 및 UUID 적용 버전)")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
-    # 봇 감지 알고리즘을 피하기 위해 무작위 지연 실행
-    time.sleep(random.uniform(0.1, 2.5))
     run_bot()
