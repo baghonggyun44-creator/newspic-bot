@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+import uuid
 
 # [환경 설정]
 PN = "638"
@@ -26,26 +27,26 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 뉴스픽 보안 엔진을 혼란시키기 위한 최신 기사 번호 대역
-    # 실제 사람이 가장 많이 클릭하는 기사 번호를 무작위로 섞습니다.
-    nids = ["8770100", "8770250", "8770400", "8769800", "8770550"]
-    selected_nid = random.choice(nids)
+    # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 최신 기사 대역 (실시간 업데이트 반영)
+    # 기사 번호가 너무 낮으면(오래되면) 봇 유입으로 판단할 확률이 높습니다.
+    latest_nids = ["8771000", "8771200", "8771500", "8770800", "8771800"]
+    selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v6.0 핵심]
-    # 1. v=2.26: 2026년형 최신 보안 규격 신호 전달
-    # 2. _tr=share_talk: 카카오톡 앱 내 공유 버튼을 통한 유입으로 위장
-    # 3. hash_token: 매번 다른 고유 토큰을 생성하여 동일 주소 중복 차단 방지
-    hash_token = hex(random.getrandbits(64))[2:]
+    # [최종 보안 우회 v7.0 핵심 기술]
+    # 1. uuid4: 매 접속마다 세상에 하나뿐인 고유 ID를 부여하여 중복 접속 차단 회피
+    # 2. _tr=organic_share: 유료 광고가 아닌 자연스러운 공유 유입으로 위장
+    # 3. mode=view_all: 리다이렉트 엔진을 강제로 종료시키고 상세 페이지 고정
+    unique_id = str(uuid.uuid4())[:8]
     article_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=2.26&_ref=talk&_tr=share_talk&t={hash_token}"
+        f"&cp=kakao&mode=view_all&v=2026.1&_ref=talk&_tr=organic_share&sid={unique_id}"
     )
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🚨 [긴급] 실시간 화제의 소식 확인",
-            "description": "본 기사는 카카오톡을 통해 공식 공유되었습니다.",
+            "title": "📺 [실시간 화제] 방금 올라온 핫이슈 확인하기",
+            "description": "클릭하시면 뉴스픽 상세 기사로 즉시 연결됩니다. (공식 인증 링크)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
                 "web_url": article_url,
@@ -54,7 +55,7 @@ def run_bot():
         },
         "buttons": [
             {
-                "title": "상세 보기",
+                "title": "기사 원문 보기",
                 "link": {
                     "web_url": article_url,
                     "mobile_web_url": article_url
@@ -63,18 +64,17 @@ def run_bot():
         ]
     }
 
-    # 카카오톡 서버에 전송 요청 (이때 카카오 서버가 실제 링크를 검증함)
     headers = {"Authorization": f"Bearer {token}"}
     res = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
                         headers=headers, 
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 위장 링크 전송 성공! (NID: {selected_nid})")
+        print(f"✅ 최종 우회 링크 전송 성공! (UUID: {unique_id})")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
-    # 봇임을 숨기기 위한 실행 간격 불규칙화
-    time.sleep(random.uniform(0.5, 3.0))
+    # 봇 감지 알고리즘을 피하기 위해 0.1~2.5초 사이의 무작위 지연 실행
+    time.sleep(random.uniform(0.1, 2.5))
     run_bot()
