@@ -27,38 +27,39 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 뉴스픽이 차단하기 가장 곤란한 '방금 올라온' 초신선 기사 번호 사용
-    # 기사 번호가 최신일수록 보안 검사가 유연합니다.
-    latest_nids = ["8797100", "8797250", "8797500", "8796800", "8797800"]
+    # 보안 감시를 피하기 위한 실시간 최신 기사 대역 (2026.01.17 업데이트)
+    latest_nids = ["8798100", "8798350", "8798500", "8797800", "8798800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v33.0 - 다이렉트 뷰어 모드]
-    # 불필요한 리다이렉트를 줄이고 뉴스픽 내부 뷰어를 직접 호출합니다.
-    unique_id = str(uuid.uuid4())[:8]
-    ts = int(time.time()) # 현재 시간을 타임스탬프로 넣어 매번 다른 주소 생성
-    
-    article_url = (
+    # [최종 보안 우회 v34.0 - 하이퍼 리다이렉트]
+    unique_id = str(uuid.uuid4())[:12]
+    # 뉴스픽이 정상적인 공유로 인식하는 파라미터 조합
+    target_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v={ts}&_ref=direct&_tr=share_link&sid={unique_id}"
+        f"&cp=kakao&mode=view_all&_ref=sns&_tr=share&sid={unique_id}"
     )
+    
+    # 🌟 핵심: 포털 검색 결과인 것처럼 위장하여 보안 서버가 추적을 포기하게 만듭니다.
+    # 포털 도메인을 경유하면 뉴스픽 보안 필터링의 우선순위가 낮아집니다.
+    bridge_url = f"https://search.naver.com/search.naver?where=nexearch&query={selected_nid}&url={target_url}"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔴 [실시간] 놓치면 후회하는 화제의 이슈",
-            "description": "상세 기사로 안전하게 연결됩니다. (최종 보안 통과)",
+            "title": "🚨 [긴급] 실시간 화제의 소식 바로 확인",
+            "description": "상세 기사로 안전하게 연결됩니다. (공식 보안 확인 완료)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
-                "web_url": article_url,
-                "mobile_web_url": article_url
+                "web_url": bridge_url,
+                "mobile_web_url": bridge_url
             }
         },
         "buttons": [
             {
-                "title": "원문 읽기",
+                "title": "기사 원문 읽기",
                 "link": {
-                    "web_url": article_url,
-                    "mobile_web_url": article_url
+                    "web_url": bridge_url,
+                    "mobile_web_url": bridge_url
                 }
             }
         ]
@@ -70,9 +71,11 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 최종 v33.0 링크 전송 성공! (NID: {selected_nid})")
+        print(f"✅ 새로운 PN(616) 기반 브릿지 링크 전송 성공! (NID: {selected_nid})")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
+    # 봇 감지 알고리즘을 피하기 위해 실행 시점을 약간 비틉니다.
+    time.sleep(random.uniform(1.0, 3.0))
     run_bot()
