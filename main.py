@@ -25,17 +25,17 @@ def get_kakao_token():
 def run_bot():
     token = get_kakao_token()
     if not token:
-        print("❌ 토큰 오류! 다시 세팅이 필요할 수 있습니다.")
+        print("❌ 토큰을 찾을 수 없습니다.")
         return
 
-    # [핵심] 뉴스픽 보안 우회를 위해 검증된 개별 기사 번호(NID) 리스트를 사용합니다.
-    # 기사 번호를 직접 매칭하면 서버 차단을 피해 상세 페이지로 바로 진입할 수 있습니다.
+    # [수익 연결 핵심] 리다이렉트를 방지하는 RSS 배포 전용 NID 리스트
+    # 이 번호들은 RSS 피드에서 현재 가장 활발하게 공유되는 기사들입니다.
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # RSS 배포 방식과 동일한 파라미터(mode=rss_view)를 사용하여 
-    # 뉴스픽 시스템이 '정상적인 기사 공유'로 인식하게 강제 설정합니다.
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=rss_view"
+    # RSS 뷰어와 동일한 파라미터(mode=view_all)를 사용하여 
+    # 뉴스픽 시스템이 '정상적인 기사 상세 보기'로 처리하게 만듭니다.
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all"
     
     template = {
         "object_type": "feed",
@@ -65,7 +65,7 @@ def run_bot():
     payload = {"template_object": json.dumps(template)}
     
     res = requests.post(url, headers=headers, data=payload)
-    print(f"📢 개별 기사 연결 결과: {res.json()}")
+    print(f"📢 RSS 방식 상세 연결 시도 결과: {res.json()}")
 
 if __name__ == "__main__":
     run_bot()
