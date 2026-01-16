@@ -28,19 +28,19 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 실시간 인기 기사 대역 (2026.01.17 기준)
-    latest_nids = ["8793100", "8793350", "8793500", "8792800", "8793800"]
+    latest_nids = ["8794100", "8794350", "8794500", "8793800", "8794800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v29.0 - 페이스북 외부 유입 위장]
+    # [최종 보안 우회 v30.0 - 인스타그램 외부 유입 위장]
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=2026_final&_ref=facebook&_tr=fb_organic&sid={unique_id}"
+        f"&cp=kakao&mode=view_all&v=2026_final&_ref=instagram&_tr=ig_organic&sid={unique_id}"
     )
     
-    # 🌟 핵심: 페이스북의 외부 링크 리다이렉트 스키마(l.facebook.com)를 흉내냅니다.
-    # 뉴스픽은 페이스북 유입을 차단할 경우 큰 수익 손실이 발생하므로 이 경로를 쉽게 막지 못합니다.
-    bridge_url = f"https://l.facebook.com/l.php?u={raw_url}"
+    # 🌟 핵심: 인스타그램의 외부 링크 리다이렉트 스키마(l.instagram.com)를 흉내냅니다.
+    # 뉴스픽은 인플루언서들의 소셜 유입을 차단할 경우 플랫폼 활성도가 떨어지므로 이 경로를 신뢰합니다.
+    bridge_url = f"https://l.instagram.com/?u={raw_url}"
     
     template = {
         "object_type": "feed",
@@ -70,7 +70,7 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 페이스북 경유 우회 링크 전송 성공 (NID: {selected_nid})")
+        print(f"✅ 인스타그램 경유 우회 링크 전송 성공 (NID: {selected_nid})")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
