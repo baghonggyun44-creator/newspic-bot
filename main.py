@@ -47,16 +47,28 @@ def run_bot():
         print("❌ 토큰 오류! KAKAO_CODE를 새로 업데이트하세요.")
         return
 
-    # 기사 가져오기
-    res = requests.post("https://partners.newspic.kr/main/contentList", data={'channelNo': '12', 'pageSize': '20'}).json()
-    articles = res.get('recomList', [])
-    if not articles: return
-    target = articles[0]
+    # [수정] 뉴스픽 서버 접근 차단 방지를 위한 헤더 추가
+    url = "https://partners.newspic.kr/main/contentList"
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Content-Type': 'application/x-www-form-urlencoded'
+    }
+    data = {'channelNo': '12', 'pageSize': '20'}
     
-    # 뉴스픽 링크 (im.newspic.kr 적용)
+    try:
+        res = requests.post(url, headers=headers, data=data)
+        articles = res.json().get('recomList', [])
+        if not articles:
+            print("⚠️ 가져온 기사가 없습니다.")
+            return
+        target = articles[0]
+    except Exception as e:
+        print(f"❌ 뉴스픽 데이터 읽기 실패: {e}")
+        return
+    
+    # 뉴스픽 링크 (질문자님의 im.newspic.kr 적용)
     article_url = f"https://im.newspic.kr/view.html?nid={target['nid']}&pn={PN}&cp=kakao"
     
-    # 메시지 템플릿
     template = {
         "object_type": "feed",
         "content": {
@@ -68,11 +80,11 @@ def run_bot():
         "buttons": [{"title": "기사 읽기", "link": {"web_url": article_url, "mobile_web_url": article_url}}]
     }
 
-    # '나에게 보내기' 실행
-    headers = {"Authorization": f"Bearer {token}"}
-    res = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
-                        headers=headers, data={"template_object": json.dumps(template)})
-    print(f"📢 나에게 보내기 결과: {res.json()}")
+    # 나에게 보내기 실행
+    headers_kakao = {"Authorization": f"Bearer {token}"}
+    res_kakao = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
+                              headers=headers_kakao, data={"template_object": json.dumps(template)})
+    print(f"📢 나에게 보내기 결과: {res_kakao.json()}")
 
 if __name__ == "__main__":
     run_bot()
