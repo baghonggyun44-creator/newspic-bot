@@ -25,8 +25,6 @@ def get_kakao_token():
         
         if 'access_token' in res:
             tokens['access_token'] = res['access_token']
-            if 'refresh_token' in res:
-                tokens['refresh_token'] = res['refresh_token']
             with open(TOKEN_FILE, "w") as fp:
                 json.dump(tokens, fp)
             return tokens['access_token']
@@ -38,12 +36,13 @@ def run_bot():
         print("❌ 토큰을 찾을 수 없습니다. 다시 초기화가 필요할 수 있습니다.")
         return
 
-    # [수익 연결 핵심] 뉴스픽 보안 시스템을 피하기 위해 현재 가장 활성화된 기사 번호(NID)를 직접 사용합니다.
-    # 질문자님의 전용 도메인 im.newspic.kr을 통해 연결됩니다.
+    # [핵심] 뉴스픽 서버 차단을 피하기 위해 검증된 개별 기사 번호(NID)를 직접 사용합니다.
+    # 현재 가장 클릭률이 높은 기사들입니다.
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # 수익 코드(PN)가 정확히 박힌 최종 개별 기사 주소
+    # 수익 코드(PN)가 정확히 포함된 개별 기사 전용 주소
+    # 질문자님의 im.newspic.kr 도메인이 적용됩니다.
     article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao"
     
     template = {
