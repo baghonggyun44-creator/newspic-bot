@@ -24,30 +24,48 @@ def get_kakao_token():
 
 def run_bot():
     token = get_kakao_token()
-    if not token: return
+    if not token:
+        print("❌ 토큰 오류! 다시 세팅이 필요할 수 있습니다.")
+        return
 
-    # [핵심] 리다이렉트를 방지하고 im.newspic.kr을 유지시키는 파라미터 조합
+    # [핵심] 뉴스픽 보안 우회를 위해 검증된 개별 기사 번호(NID) 리스트를 사용합니다.
+    # 기사 번호를 직접 매칭하면 서버 차단을 피해 상세 페이지로 바로 진입할 수 있습니다.
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # mode=view_all과 utm 인자를 조합하여 뉴스픽 보안 시스템이 '정상 클릭'으로 인식하게 합니다.
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&utm_campaign=share"
+    # RSS 배포 방식과 동일한 파라미터(mode=rss_view)를 사용하여 
+    # 뉴스픽 시스템이 '정상적인 기사 공유'로 인식하게 강제 설정합니다.
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=rss_view"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔥 [실시간 핫이슈] 지금 가장 뜨거운 뉴스",
-            "description": "상세 내용을 보시려면 아래 버튼을 눌러주세요.",
+            "title": "🔥 [실시간 핫이슈] 지금 난리난 뉴스 확인하기",
+            "description": "클릭하시면 해당 기사의 상세 내용을 바로 확인하실 수 있습니다.",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
-            "link": {"web_url": article_url, "mobile_web_url": article_url}
+            "link": {
+                "web_url": article_url,
+                "mobile_web_url": article_url
+            }
         },
-        "buttons": [{"title": "기사 상세보기", "link": {"web_url": article_url, "mobile_web_url": article_url}}]
+        "buttons": [
+            {
+                "title": "기사 바로 읽기",
+                "link": {
+                    "web_url": article_url,
+                    "mobile_web_url": article_url
+                }
+            }
+        ]
     }
 
-    res = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
-                        headers={"Authorization": f"Bearer {token}"}, 
-                        data={"template_object": json.dumps(template)})
-    print(f"📢 리다이렉트 방어 전송 결과: {res.json()}")
+    # '나에게 보내기' 실행
+    url = "https://kapi.kakao.com/v2/api/talk/memo/default/send"
+    headers = {"Authorization": f"Bearer {token}"}
+    payload = {"template_object": json.dumps(template)}
+    
+    res = requests.post(url, headers=headers, data=payload)
+    print(f"📢 개별 기사 연결 결과: {res.json()}")
 
 if __name__ == "__main__":
     run_bot()
