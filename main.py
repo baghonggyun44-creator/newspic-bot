@@ -31,12 +31,12 @@ def run_bot():
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # [최종 보안 우회 v3.9] im.newspic.kr 도메인 유지를 위한 정밀 파라미터 조합
+    # [최종 보안 우회 v4.0] im.newspic.kr 도메인 유지를 위한 정밀 파라미터 조합
     # 1. mode=view_all: 시스템 리다이렉트를 중단하고 상세 페이지 강제 노출
-    # 2. v=3.9: 뉴스픽의 최신 보안 우회 규격 버전 신호 전달
+    # 2. v=4.0: 뉴스픽의 최신 보안 우회 규격 버전 신호 전달
     # 3. utm_source/medium/campaign: 신뢰할 수 있는 SNS 유입으로 완벽 위장
-    # 4. _ref=talk&_tr=link_auth_v39: 최종 인증된 링크 클릭 신호를 강화하여 보안 통과
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=3.9&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share&_ref=talk&_tr=link_auth_v39"
+    # 4. _ref=talk&_tr=link_auth_v40: 최종 인증된 링크 클릭 신호를 강화하여 보안 통과
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=4.0&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share&_ref=talk&_tr=link_auth_v40"
     
     template = {
         "object_type": "feed",
@@ -64,7 +64,7 @@ def run_bot():
     res = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
                         headers={"Authorization": f"Bearer {token}"}, 
                         data={"template_object": json.dumps(template)})
-    print(f"📢 개별 기사 최종 우회 결과(v3.9): {res.json()}")
+    print(f"📢 개별 기사 최종 우회 결과(v4.0): {res.json()}")
 
 if __name__ == "__main__":
     run_bot()
