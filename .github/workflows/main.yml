@@ -1,0 +1,34 @@
+name: Newspic Auto Bot
+
+on:
+  schedule:
+    - cron: '0 * * * *'  # 매 정각 실행
+  workflow_dispatch:      # 수동 실행 버튼
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run bot
+        env:
+          KAKAO_CODE: ${{ secrets.KAKAO_CODE }}
+        run: python main.py
+
+      - name: Update Token
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add kakao_token.json
+          git commit -m "Update Token" || echo "No changes"
+          git push
