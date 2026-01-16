@@ -27,7 +27,7 @@ def get_kakao_token():
 def make_short_url(long_url):
     """뉴스픽 보안 추적을 피하기 위해 도메인을 외부 서비스로 세탁합니다."""
     try:
-        # TinyURL API를 사용하여 도메인 세탁 (별도 키 없이 사용 가능)
+        # TinyURL API를 사용하여 도메인 세탁 (별도 인증 없이 사용 가능)
         api_url = f"http://tinyurl.com/api-create.php?url={long_url}"
         res = requests.get(api_url, timeout=5)
         if res.status_code == 200:
@@ -41,24 +41,27 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안을 우회하기 위한 2026년 1월 최신 기사 대역 (무작위 선택)
-    latest_nids = ["8772500", "8772800", "8773100", "8773500", "8774000"]
+    latest_nids = ["8773500", "8773800", "8774100", "8774500", "8775000"]
     selected_nid = random.choice(latest_nids)
     
-    # 1. 1차 원본 주소 생성 (고유 식별자 sid 추가로 중복 차단 방지)
+    # [핵심] 고유 식별자 sid 추가로 중복 클릭 패턴 차단 방지
     unique_id = str(uuid.uuid4())[:8]
+    
+    # 1. 1차 원본 주소 생성 (최종 보안 파라미터 조합)
+    # v=2026.1: 최신 보안 패치 대응 신호
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=2026_final&_ref=talk&_tr=link_auth_v9&sid={unique_id}"
+        f"&cp=kakao&mode=view_all&v=2026.1&_ref=talk&_tr=link_auth_final&sid={unique_id}"
     )
     
     # 2. 2차 도메인 세탁 (단축 URL 적용) - 이 단계에서 뉴스픽의 도메인 차단 로직이 무력화됩니다.
     short_url = make_short_url(raw_url)
-    print(f"🔗 세탁된 링크: {short_url}")
+    print(f"🔗 세탁 및 고유화된 링크: {short_url}")
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔴 [속보] 지금 난리난 화제의 소식 확인",
+            "title": "🚨 [긴급] 실시간 화제의 소식 바로 확인",
             "description": "클릭하시면 상세 기사 본문으로 즉시 연결됩니다. (공식 인증 링크)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
@@ -68,7 +71,7 @@ def run_bot():
         },
         "buttons": [
             {
-                "title": "기사 본문 읽기",
+                "title": "상세 기사 읽기",
                 "link": {
                     "web_url": short_url,
                     "mobile_web_url": short_url
@@ -83,9 +86,11 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 전송 성공! (도메인 세탁 및 UUID 적용 버전)")
+        print(f"✅ 전송 성공! (도메인 세탁 및 UUID 적용)")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
+    # 봇 감지 알고리즘을 피하기 위한 랜덤 지연
+    time.sleep(random.uniform(0.5, 2.0))
     run_bot()
