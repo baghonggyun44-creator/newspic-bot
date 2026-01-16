@@ -28,11 +28,11 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안 엔진이 신뢰하는 2026년 1월 최신 기사 대역
-    latest_nids = ["8784100", "8784350", "8784500", "8783800", "8784800"]
+    latest_nids = ["8785000", "8785250", "8785500", "8784800", "8785800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v19.0 - 구글 검색 엔진 경유 위장]
-    # 뉴스픽 서버가 유입 경로를 추적할 때 카카오톡 대신 구글 검색을 통한 유입으로 위장합니다.
+    # [최종 보안 우회 v20.0 - 다중 검색 위장]
+    # 뉴스픽 서버가 유입 경로를 추적할 때 카카오톡을 지우고 구글 검색으로 위장합니다.
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
@@ -40,7 +40,7 @@ def run_bot():
     )
     
     # 🌟 핵심: 구글 리다이렉트 스키마를 사용하여 뉴스픽 보안 서버를 완벽하게 속입니다.
-    # 뉴스픽은 구글 검색 트래픽을 차단할 경우 플랫폼 지수 하락 위험이 있어 이를 쉽게 막지 못합니다.
+    # 뉴스픽은 구글 검색 유입을 차단할 경우 플랫폼 지수 하락 위험이 있어 이를 쉽게 막지 못합니다.
     bridge_url = f"https://www.google.com/url?q={raw_url}"
     
     template = {
@@ -56,7 +56,7 @@ def run_bot():
         },
         "buttons": [
             {
-                "title": "기사 전문 보기",
+                "title": "상세 기사 보기",
                 "link": {
                     "web_url": bridge_url,
                     "mobile_web_url": bridge_url
