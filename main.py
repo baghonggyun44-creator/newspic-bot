@@ -27,13 +27,12 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 최신 기사 대역 (실시간 업데이트 반영)
-    # 기사 번호가 너무 낮으면(오래되면) 봇 유입으로 판단할 확률이 높습니다.
+    # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 최신 기사 대역 (2026년 1월 기준)
     latest_nids = ["8771000", "8771200", "8771500", "8770800", "8771800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v7.0 핵심 기술]
-    # 1. uuid4: 매 접속마다 세상에 하나뿐인 고유 ID를 부여하여 중복 접속 차단 회피
+    # [최종 보안 우회 v8.0 핵심]
+    # 1. uuid4: 매 접속마다 고유 ID를 부여하여 중복 접속 차단 회피
     # 2. _tr=organic_share: 유료 광고가 아닌 자연스러운 공유 유입으로 위장
     # 3. mode=view_all: 리다이렉트 엔진을 강제로 종료시키고 상세 페이지 고정
     unique_id = str(uuid.uuid4())[:8]
@@ -45,7 +44,7 @@ def run_bot():
     template = {
         "object_type": "feed",
         "content": {
-            "title": "📺 [실시간 화제] 방금 올라온 핫이슈 확인하기",
+            "title": "📺 [실시간 화제] 지금 난리난 핫이슈 확인하기",
             "description": "클릭하시면 뉴스픽 상세 기사로 즉시 연결됩니다. (공식 인증 링크)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
@@ -75,6 +74,6 @@ def run_bot():
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
-    # 봇 감지 알고리즘을 피하기 위해 0.1~2.5초 사이의 무작위 지연 실행
+    # 봇 감지 알고리즘을 피하기 위해 무작위 지연 실행
     time.sleep(random.uniform(0.1, 2.5))
     run_bot()
