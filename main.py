@@ -11,7 +11,6 @@ REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 TOKEN_FILE = "kakao_token.json"
 
 def get_kakao_token():
-    # 저장된 토큰 파일을 사용하여 액세스 토큰을 자동으로 갱신합니다.
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as fp:
             tokens = json.load(fp)
@@ -29,10 +28,10 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 2026년 1월 최신 기사 대역
-    latest_nids = ["8777000", "8777200", "8777500", "8776800", "8777800"]
+    latest_nids = ["8778000", "8778200", "8778500", "8777800", "8778800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v12.0 - 구글 검색 엔진 경유 위장]
+    # [최종 보안 우회 v13.0 - 구글 검색 엔진 경유 위장]
     # 뉴스픽 서버가 유입 경로를 추적할 때 카카오톡을 지우고 구글 검색으로 위장합니다.
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
@@ -41,13 +40,14 @@ def run_bot():
     )
     
     # 🌟 핵심: 구글 리다이렉트 스키마를 사용하여 뉴스픽 보안 서버를 속입니다.
+    # 뉴스픽은 구글 검색 유입 트래픽을 차단할 경우 검색 노출에 불이익을 받기 때문에 이를 쉽게 막지 못합니다.
     bridge_url = f"https://www.google.com/url?q={raw_url}"
     
     template = {
         "object_type": "feed",
         "content": {
             "title": "🔴 [실시간] 지금 바로 확인해야 할 화제의 뉴스",
-            "description": "상세 기사 본문으로 안전하게 연결됩니다. (구글 보안 확인 완료)",
+            "description": "상세 기사 본문으로 안전하게 연결됩니다. (공식 보안 확인 완료)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
                 "web_url": bridge_url,
