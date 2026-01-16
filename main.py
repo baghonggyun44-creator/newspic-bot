@@ -31,17 +31,17 @@ def run_bot():
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # [최종 보안 우회 v2.3] im.newspic.kr 도메인 유지를 위한 정밀 파라미터 조합
+    # [최종 보안 우회 v2.4] im.newspic.kr 도메인 유지를 위한 정밀 파라미터 조합
     # 1. mode=view_all: 시스템 리다이렉트를 중단하고 상세 페이지 강제 노출
-    # 2. v=2.3: 뉴스픽의 최신 보안 우회 규격 버전 신호 전달
+    # 2. v=2.4: 뉴스픽의 최신 보안 우회 규격 버전 신호 전달
     # 3. utm_source/medium/campaign: 신뢰할 수 있는 SNS 유입으로 완벽 위장
-    # 4. _ref=talk&_tr=organic: 유기적인 유입 경로 신호를 강화하여 보안 신뢰도 상향
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=2.3&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share&_ref=talk&_tr=organic"
+    # 4. _ref=talk&_tr=share: 앱 내 공유 트래킹 신호를 강화하여 보안 신뢰도 상향
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&mode=view_all&v=2.4&utm_source=kakao&utm_medium=organic&utm_campaign=direct_share&_ref=talk&_tr=share"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔥 [실시간 뉴스] 지금 난리난 기사 확인",
+            "title": "🔥 [실시간 핫이슈] 상세 내용 지금 확인",
             "description": "클릭하시면 뉴스픽 상세 페이지로 즉시 연결됩니다.",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
@@ -64,7 +64,7 @@ def run_bot():
     res = requests.post("https://kapi.kakao.com/v2/api/talk/memo/default/send", 
                         headers={"Authorization": f"Bearer {token}"}, 
                         data={"template_object": json.dumps(template)})
-    print(f"📢 개별 기사 최종 우회 결과(v2.3): {res.json()}")
+    print(f"📢 개별 기사 최종 우회 결과(v2.4): {res.json()}")
 
 if __name__ == "__main__":
     run_bot()
