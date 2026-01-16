@@ -27,11 +27,11 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 실시간 인기 기사 대역 (2026.01.17 업데이트)
-    latest_nids = ["8791000", "8791250", "8791500", "8790800", "8791800"]
+    # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 실시간 인기 기사 대역 (2026.01.17 기준)
+    latest_nids = ["8792100", "8792350", "8792500", "8791800", "8792800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v27.0 - 구글 검색 리다이렉트 위장]
+    # [최종 보안 우회 v28.0 - 구글 검색 리다이렉트 위장]
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
@@ -39,7 +39,7 @@ def run_bot():
     )
     
     # 🌟 핵심: 구글 리다이렉트 스키마를 사용하여 뉴스픽 보안 서버를 완벽하게 속입니다.
-    # 뉴스픽은 구글 검색 유입을 차단할 경우 검색 노출 하락 위험이 있어 이를 쉽게 막지 못합니다.
+    # 뉴스픽은 구글 검색 유입을 차단할 경우 검색 엔진 최적화(SEO)에 치명적인 불이익을 받으므로 이를 쉽게 막지 못합니다.
     bridge_url = f"https://www.google.com/url?q={raw_url}"
     
     template = {
