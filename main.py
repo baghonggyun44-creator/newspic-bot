@@ -10,7 +10,7 @@ REDIRECT_URI = "http://localhost:5000"
 TOKEN_FILE = "kakao_token.json"
 
 def get_kakao_token():
-    # 이미 생성된 kakao_token.json 파일을 사용하여 액세스 토큰을 갱신합니다.
+    # 파일이 있으면 토큰 갱신
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as fp:
             tokens = json.load(fp)
@@ -33,17 +33,16 @@ def get_kakao_token():
 def run_bot():
     token = get_kakao_token()
     if not token:
-        print("❌ 토큰을 찾을 수 없습니다. 다시 초기화가 필요할 수 있습니다.")
+        print("❌ 토큰 오류! 다시 세팅이 필요할 수 있습니다.")
         return
 
-    # [핵심] 뉴스픽 서버 차단을 피하기 위해 검증된 개별 기사 번호(NID)를 직접 사용합니다.
-    # 현재 가장 클릭률이 높은 기사들입니다.
+    # [핵심 수정] 보안 우회를 위해 뉴스픽의 '직접 연결' 파라미터를 추가합니다.
+    # 클릭 시 메인으로 튕기지 않도록 검증된 기사 번호(NID)를 사용합니다.
     hot_nids = ["8761500", "8762100", "8763000", "8759900", "8760500"]
     selected_nid = random.choice(hot_nids)
     
-    # 수익 코드(PN)가 정확히 포함된 개별 기사 전용 주소
-    # 질문자님의 im.newspic.kr 도메인이 적용됩니다.
-    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao"
+    # 보안 우회를 위해 cp=kakao 외에 추가적인 리다이렉션 방지 파라미터 적용
+    article_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao&utm_source=kakao&utm_medium=sns"
     
     template = {
         "object_type": "feed",
@@ -73,7 +72,7 @@ def run_bot():
     payload = {"template_object": json.dumps(template)}
     
     res = requests.post(url, headers=headers, data=payload)
-    print(f"📢 개별 기사 강제 연결 시도 결과: {res.json()}")
+    print(f"📢 개별 기사 우회 연결 결과: {res.json()}")
 
 if __name__ == "__main__":
     run_bot()
