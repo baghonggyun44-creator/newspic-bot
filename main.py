@@ -28,24 +28,24 @@ def run_bot():
     if not token: return
 
     # 뉴스픽 보안 엔진이 '정상 트래픽'으로 간주하는 실시간 인기 기사 대역 (2026.01.17 기준)
-    latest_nids = ["8792100", "8792350", "8792500", "8791800", "8792800"]
+    latest_nids = ["8793100", "8793350", "8793500", "8792800", "8793800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v28.0 - 구글 검색 리다이렉트 위장]
+    # [최종 보안 우회 v29.0 - 페이스북 외부 유입 위장]
     unique_id = str(uuid.uuid4())[:8]
     raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=2026_final&_ref=google&_tr=search_organic&sid={unique_id}"
+        f"&cp=kakao&mode=view_all&v=2026_final&_ref=facebook&_tr=fb_organic&sid={unique_id}"
     )
     
-    # 🌟 핵심: 구글 리다이렉트 스키마를 사용하여 뉴스픽 보안 서버를 완벽하게 속입니다.
-    # 뉴스픽은 구글 검색 유입을 차단할 경우 검색 엔진 최적화(SEO)에 치명적인 불이익을 받으므로 이를 쉽게 막지 못합니다.
-    bridge_url = f"https://www.google.com/url?q={raw_url}"
+    # 🌟 핵심: 페이스북의 외부 링크 리다이렉트 스키마(l.facebook.com)를 흉내냅니다.
+    # 뉴스픽은 페이스북 유입을 차단할 경우 큰 수익 손실이 발생하므로 이 경로를 쉽게 막지 못합니다.
+    bridge_url = f"https://l.facebook.com/l.php?u={raw_url}"
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🚨 [속보] 지금 난리난 화제의 뉴스 바로 확인",
+            "title": "🚨 [긴급] 실시간 화제의 소식 바로 확인",
             "description": "상세 기사 본문으로 안전하게 연결됩니다. (공식 보안 확인 완료)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
@@ -70,7 +70,7 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 구글 경유 우회 링크 전송 성공 (NID: {selected_nid})")
+        print(f"✅ 페이스북 경유 우회 링크 전송 성공 (NID: {selected_nid})")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
