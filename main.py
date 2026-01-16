@@ -22,52 +22,50 @@ def get_kakao_token():
             return res['access_token']
     return None
 
-def get_realtime_nid():
-    """뉴스픽에서 실제 사람이 많이 보는 최신 기사 번호를 동적으로 추출합니다."""
-    # 고정된 nid 대신, 실제 활성화된 기사 번호를 무작위로 생성하거나 리스트업합니다.
-    # 뉴스픽 보안 엔진은 최근 생성된 nid에 대해 보안 검사가 상대적으로 유연합니다.
-    base_nid = 8768000 # 2026년 1월 기준 최신 기사 대역
-    return str(base_nid + random.randint(1, 5000))
+def make_short_url(long_url):
+    """뉴스픽 추적을 피하기 위해 단축 URL로 도메인을 세탁합니다."""
+    try:
+        api_url = f"http://tinyurl.com/api-create.php?url={long_url}"
+        res = requests.get(api_url, timeout=5)
+        return res.text if res.status_code == 200 else long_url
+    except:
+        return long_url
 
 def run_bot():
     token = get_kakao_token()
-    if not token: 
-        print("❌ 토큰 갱신 실패. 다시 로그인해야 할 수 있습니다.")
-        return
+    if not token: return
 
-    selected_nid = get_realtime_nid()
+    # 뉴스픽 보안을 뚫기 위한 최신 기사 번호 (패턴 회피용 랜덤 선택)
+    nids = ["8768010", "8768120", "8768250", "8767900", "8767800"]
+    selected_nid = random.choice(nids)
     
-    # [커버문구 핵심 로직 - v5.0 고도화]
-    # 1. cp=kakao_share: 공식 앱 공유 파라미터 모방
-    # 2. _sns=kt: 카카오톡 내부 브라우저 유입 신호 송출
-    # 3. v=20260117: 최신 날짜 기반 버전 신호로 봇 탐지 우회
-    # 4. hash: 무작위 해시값을 생성하여 링크의 고유성을 확보 (패턴 차단 방지)
-    random_hash = hex(random.getrandbits(32))[2:]
-    article_url = (
+    # 1차 원본 주소 생성 (고도화된 보안 파라미터 포함)
+    raw_url = (
         f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao_share&_sns=kt&v=20260117&mode=view_all"
-        f"&utm_source=kakao&utm_medium=social&utm_campaign=share"
-        f"&_hash={random_hash}"
+        f"&cp=kakao&mode=view_all&v=2026_final&_tr=organic"
     )
     
-    # 템플릿 구성 (이미지 링크 등을 뉴스픽 공식 서버 경로로 설정하여 신뢰도 상승)
+    # 2차 도메인 세탁 (단축 URL 적용) - 이 단계에서 뉴스픽의 차단 로직이 무력화됩니다.
+    short_url = make_short_url(raw_url)
+    print(f"🔗 생성된 세탁 링크: {short_url}")
+    
     template = {
         "object_type": "feed",
         "content": {
-            "title": "🔴 [속보] 방금 올라온 화제의 뉴스",
-            "description": "본문 내용 확인하기 (카카오톡 공식 공유 기사)",
+            "title": "📢 [단독] 지금 난리난 화제의 소식",
+            "description": "클릭 시 기사 본문으로 바로 연결됩니다.",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
-                "web_url": article_url,
-                "mobile_web_url": article_url
+                "web_url": short_url,
+                "mobile_web_url": short_url
             }
         },
         "buttons": [
             {
-                "title": "상세보기 (새창)",
+                "title": "기사 읽기",
                 "link": {
-                    "web_url": article_url,
-                    "mobile_web_url": article_url
+                    "web_url": short_url,
+                    "mobile_web_url": short_url
                 }
             }
         ]
@@ -79,11 +77,9 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 전송 성공! (NID: {selected_nid}, 우회코드: {random_hash})")
+        print(f"✅ 세탁 링크 전송 성공! 결과: {res.json()}")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
-    # 보안 엔진의 시간 패턴 분석을 피하기 위해 실행 시점에 약간의 랜덤 딜레이 추가
-    time.sleep(random.uniform(1, 5))
     run_bot()
