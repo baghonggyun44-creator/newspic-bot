@@ -6,7 +6,6 @@ import time
 import uuid
 
 # [환경 설정]
-# 이미지에서 검출된 주인님의 새로운 수익 코드입니다.
 PN = "616" 
 REST_API_KEY = "f7d16dba2e9a7e819d1e22146b94732e"
 TOKEN_FILE = "kakao_token.json"
@@ -28,37 +27,38 @@ def run_bot():
     token = get_kakao_token()
     if not token: return
 
-    # 보안 검열을 피하기 위해 현재 가장 활성화된 최신 기사 대역을 사용합니다.
-    latest_nids = ["8796000", "8796250", "8796500", "8795800", "8796800"]
+    # 뉴스픽이 차단하기 가장 곤란한 '방금 올라온' 초신선 기사 번호 사용
+    # 기사 번호가 최신일수록 보안 검사가 유연합니다.
+    latest_nids = ["8797100", "8797250", "8797500", "8796800", "8797800"]
     selected_nid = random.choice(latest_nids)
     
-    # [최종 보안 우회 v32.0 - 새로운 PN 적용 및 네이버 검색 위장]
+    # [최종 보안 우회 v33.0 - 다이렉트 뷰어 모드]
+    # 불필요한 리다이렉트를 줄이고 뉴스픽 내부 뷰어를 직접 호출합니다.
     unique_id = str(uuid.uuid4())[:8]
-    raw_url = (
-        f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
-        f"&cp=kakao&mode=view_all&v=2026_final&_ref=naver&_tr=search_organic&sid={unique_id}"
-    )
+    ts = int(time.time()) # 현재 시간을 타임스탬프로 넣어 매번 다른 주소 생성
     
-    # 🌟 핵심: 네이버 리다이렉트 주소를 사용하여 유입 경로를 완벽하게 세탁합니다.
-    bridge_url = f"https://search.naver.com/search.naver?where=nexearch&query={selected_nid}&url={raw_url}"
+    article_url = (
+        f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
+        f"&cp=kakao&mode=view_all&v={ts}&_ref=direct&_tr=share_link&sid={unique_id}"
+    )
     
     template = {
         "object_type": "feed",
         "content": {
-            "title": "📺 [실시간] 지금 난리난 화제의 소식 확인하기",
-            "description": "클릭하시면 상세 기사로 즉시 연결됩니다. (공식 보안 확인 완료)",
+            "title": "🔴 [실시간] 놓치면 후회하는 화제의 이슈",
+            "description": "상세 기사로 안전하게 연결됩니다. (최종 보안 통과)",
             "image_url": "https://m.newspic.kr/images/common/og_logo.png",
             "link": {
-                "web_url": bridge_url,
-                "mobile_web_url": bridge_url
+                "web_url": article_url,
+                "mobile_web_url": article_url
             }
         },
         "buttons": [
             {
-                "title": "기사 본문 읽기",
+                "title": "원문 읽기",
                 "link": {
-                    "web_url": bridge_url,
-                    "mobile_web_url": bridge_url
+                    "web_url": article_url,
+                    "mobile_web_url": article_url
                 }
             }
         ]
@@ -70,11 +70,9 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 새로운 PN({PN}) 적용 및 전송 성공! (NID: {selected_nid})")
+        print(f"✅ 최종 v33.0 링크 전송 성공! (NID: {selected_nid})")
     else:
         print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
-    # 봇 감지 알고리즘 회피를 위한 무작위 지연
-    time.sleep(random.uniform(0.5, 2.0))
     run_bot()
