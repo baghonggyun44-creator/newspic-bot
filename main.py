@@ -3,6 +3,7 @@ import json
 import os
 import random
 import time
+import uuid
 
 # [환경 설정]
 PN = "616" 
@@ -13,48 +14,36 @@ def get_kakao_token():
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r") as fp:
             tokens = json.load(fp)
-        
-        # 토큰 유효성 즉시 확인
-        test_url = "https://kapi.kakao.com/v1/user/access_token_info"
-        test_res = requests.get(test_url, headers={"Authorization": f"Bearer {tokens['access_token']}"})
-        
-        if test_res.status_code != 200: # 토큰이 만료되었다면 갱신
-            url = "https://kauth.kakao.com/oauth/token"
-            data = {
-                "grant_type": "refresh_token",
-                "client_id": REST_API_KEY,
-                "refresh_token": tokens['refresh_token']
-            }
-            res = requests.post(url, data=data).json()
-            if 'access_token' in res:
-                tokens['access_token'] = res['access_token']
-                # 리프레시 토큰도 새로 오면 업데이트
-                if 'refresh_token' in res:
-                    tokens['refresh_token'] = res['refresh_token']
-                with open(TOKEN_FILE, "w") as fp: json.dump(tokens, fp)
-                return tokens['access_token']
-        else:
-            return tokens['access_token']
+        url = "https://kauth.kakao.com/oauth/token"
+        data = {"grant_type": "refresh_token", "client_id": REST_API_KEY, "refresh_token": tokens['refresh_token']}
+        res = requests.post(url, data=data).json()
+        if 'access_token' in res:
+            tokens['access_token'] = res['access_token']
+            with open(TOKEN_FILE, "w") as fp: json.dump(tokens, fp)
+            return res['access_token']
     return None
 
 def run_bot():
     token = get_kakao_token()
-    if not token:
-        print("❌ 토큰을 가져올 수 없습니다. 인증을 다시 진행해주세요.")
-        return
+    if not token: return
 
-    # 최신 뉴스 번호 (2026.01.17 업데이트)
-    selected_nid = "2026011617451103880" # 이미지에 나온 최신 NID 사용
+    # 기사 번호 (차단 패턴을 피하기 위해 최신 기사 사용)
+    selected_nid = "2026011617451103880"
     
-    # [최종 우회 구조]
-    # 필터링을 피하기 위해 텍스트 메시지 내부에 구글 경유 링크를 넣습니다.
-    target_url = f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}&cp=kakao"
-    bridge_url = f"https://www.google.com/url?q={target_url}"
+    # [최종 보안 우회 v37.0 - 카카오 흔적 완전 삭제]
+    unique_id = str(uuid.uuid4())[:8]
+    # 🌟 핵심: cp=kakao를 제거하고, 뉴스픽이 거부할 수 없는 구글 유입(organic) 파라미터를 넣습니다.
+    clean_url = (
+        f"https://im.newspic.kr/view.html?nid={selected_nid}&pn={PN}"
+        f"&_ref=google&_tr=search_organic&v=2026_stable&sid={unique_id}"
+    )
     
-    # 피드 타입 대신 텍스트 타입으로 전송 (스팸 필터 회피율 높음)
+    # 구글 공식 리다이렉트 스키마 (보안 서버가 유입 경로를 구글로 인식하게 함)
+    bridge_url = f"https://www.google.com/url?q={clean_url}"
+    
     template = {
         "object_type": "text",
-        "text": f"🚨 [속보] 화제의 뉴스 확인하기\n\n{bridge_url}",
+        "text": f"🚨 [속보] 실시간 화제의 소식 확인하기\n\n{bridge_url}",
         "link": {
             "web_url": bridge_url,
             "mobile_web_url": bridge_url
@@ -68,10 +57,9 @@ def run_bot():
                         data={"template_object": json.dumps(template)})
     
     if res.status_code == 200:
-        print(f"✅ 전송 명령 성공! 나에게 보내기 확인 요망 (NID: {selected_nid})")
+        print(f"✅ 카카오 흔적 제거 v37.0 전송 성공! (NID: {selected_nid})")
     else:
-        # 에러 상세 내용을 출력하여 원인을 파악합니다.
-        print(f"❌ 전송 실패 원인: {res.json()}")
+        print(f"❌ 전송 실패: {res.json()}")
 
 if __name__ == "__main__":
     run_bot()
